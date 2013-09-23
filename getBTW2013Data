@@ -1,0 +1,36 @@
+
+getBTW2013Data <- function() {
+  library(XML)
+  library(stringr)
+  
+  lk <- c("Schleswig-Holstein", "Hamburg", "Niedersachsen", "Bremen", "Nordrhein-Westfalen", "Hessen", "Rheinland-Pfalz", "Baden-Württemberg", "Bayern", "Saarland", "Berlin", "Brandenburg", "Mecklenburg-Vorpommern", "Sachsen", "Sachsen-Anhalt", "Thüringen") 
+  lkNum <- c(paste0("l0", 1:9), paste0("l", 10:16))
+  # Wahlkreis Base URL
+  theBaseUrl <- "http://www.bundeswahlleiter.de/de/bundestagswahlen/BTW_BUND_13/ergebnisse/wahlkreisergebnisse/"
+  btwahl <- c()
+  for (i in 1:16) {
+    url <- paste0(theBaseUrl, lkNum[i], "/")
+    
+    # Hole Wahlkreise
+    tables <- readHTMLTable(url, as.data.frame=T, stringsAsFactors = F, encoding="UTF-8")
+    
+    # Extrahiere Wahlkreisnummer
+    wk <- str_replace_all(tables$"NULL"[,1], "[a-z, A-Z, --, (), /, ., ü, ö, ä, ß]", "")
+    cat(wk, "\n")
+    m <- length(wk)
+    for (j in 1:m) {
+      dataURL <- paste0(theBaseUrl, lkNum[i], "/", "wk", wk[j], "/")
+      tables <- readHTMLTable(dataURL, as.data.frame=T, stringsAsFactors = F, encoding="UTF-8")
+      data <- tables$"NULL"
+      names(data) <- c("Gegenstand", "Anzahl1Stimme", "Prozent1Stimme", "Diff20091Stimme", "Anzahl2Stimme", "Prozent2Stimme", "Diff20092Stimme")
+      data$WKID <- wk[j]
+      data$LKID <- lkNum[i]
+      if (i == 1 && j == 1) {
+        btwahl <- data
+      } else {
+        btwahl <- rbind(btwahl, data)
+      }
+    }
+  }
+  return(btwahl)
+}
